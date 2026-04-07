@@ -6,7 +6,6 @@ A web-based configuration generator for [fastfetch](https://github.com/fastfetch
 
 🚀 **Hosted on GitHub Pages:** https://clawedcode-git.github.io/ffconfigmaker/
 
-*(Replace `yourusername` with your GitHub username after forking/deploying)*
 
 ## Features
 
@@ -23,7 +22,7 @@ A web-based configuration generator for [fastfetch](https://github.com/fastfetch
 
 ```bash
 # Clone and open
-git clone https://github.com/yourusername/ffconfigmaker.git
+git clone https://github.com/clawedcode-git/ffconfigmaker.git
 cd ffconfigmaker
 xdg-open index.html  # Linux
 open index.html       # macOS
@@ -64,15 +63,6 @@ mv fastfetch-config.json ~/.config/fastfetch/config.jsonc
 cat fastfetch-config.json > ~/.config/fastfetch/config.jsonc
 ```
 
-## Local Server (Optional)
-
-For the embedded terminal preview feature:
-
-```bash
-cd ffconfigmaker
-node dist/server.js
-# Open http://localhost:8080
-```
 
 ## Project Structure
 
