@@ -4,7 +4,7 @@ A web-based configuration generator for [fastfetch](https://github.com/fastfetch
 
 ## Live Demo
 
-🚀 **Hosted on GitHub Pages:** https://yourusername.github.io/ffconfigmaker/
+🚀 **Hosted on GitHub Pages:** https://clawedcode-git.github.io/ffconfigmaker/
 
 *(Replace `yourusername` with your GitHub username after forking/deploying)*
 
