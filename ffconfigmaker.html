@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fastfetch Config Maker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --bg-hover: #30363d;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent: #58a6ff;
+            --accent-hover: #79b8ff;
+            --success: #3fb950;
+            --warning: #d29922;
+            --error: #f85149;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 220px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .sidebar-header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .sidebar-header p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .nav-section {
+            padding: 10px 0;
+        }
+        .nav-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        .nav-item.active {
+            background: var(--bg-tertiary);
+            color: var(--accent);
+            border-left-color: var(--accent);
+        }
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .content-header {
+            padding: 15px 25px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .content-header h2 {
+            font-size: 20px;
+            font-weight: 500;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .content-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        .config-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding: 25px;
+        }
+        .preview-panel {
+            width: 450px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .preview-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .preview-header h3 {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .preview-body {
+            flex: 1;
+            overflow: auto;
+            padding: 15px;
+        }
+        .preview-body pre {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            flex: 1;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: border-color 0.15s;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .form-group input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+        }
+        .checkbox-row label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+        }
+        .btn-danger {
+            background: var(--error);
+            color: #fff;
+        }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .module-item {
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .module-item:hover {
+            border-color: var(--accent);
+        }
+        .module-item.selected {
+            border-color: var(--accent);
+            background: rgba(88, 166, 255, 0.1);
+        }
+        .module-item input[type="checkbox"] {
+            margin: 0;
+        }
+        .module-item span {
+            font-size: 13px;
+        }
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .nested-fields {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .nested-title {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            width: 95%;
+            max-width: 1200px;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+        }
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            font-size: 18px;
+        }
+        .modal-body {
+            flex: 1;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        #terminal {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            border-radius: 6px;
+        }
+        #terminal .xterm {
+            padding: 10px;
+        }
+        #terminal .xterm-viewport {
+            overflow-y: auto !important;
+        }
+        .logo-type-options {
+            display: none;
+        }
+        .logo-type-options.visible {
+            display: block;
+        }
+        .search-box {
+            padding: 12px 15px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .active-modules {
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            min-height: 80px;
+        }
+        .active-modules-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        .active-modules-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .module-tag {
+            padding: 5px 10px;
+            background: var(--accent);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: grab;
+        }
+        .module-tag .remove {
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        .module-tag .remove:hover {
+            opacity: 1;
+        }
+        .module-settings {
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        .file-drop {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.15s;
+        }
+        .file-drop.dragover {
+            border-color: var(--accent);
+            background: rgba(88, 166, 255, 0.1);
+        }
+        .file-drop p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .file-drop input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>Fastfetch Config</h1>
+                <p>Configuration Generator</p>
+            </div>
+            <nav class="nav-section">
+                <div class="nav-item active" data-tab="logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    <span>Logo</span>
+                </div>
+                <div class="nav-item" data-tab="display">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                    <span>Display</span>
+                </div>
+                <div class="nav-item" data-tab="modules">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    <span>Modules</span>
+                </div>
+                <div class="nav-item" data-tab="colors">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/></svg>
+                    <span>Colors</span>
+                </div>
+                <div class="nav-item" data-tab="general">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                    <span>General</span>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="btn btn-secondary" id="importBtn" style="width: 100%;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    Import Config
+                </button>
+                <button class="btn btn-secondary" id="exportBtn" style="width: 100%;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                    Export Config
+                </button>
+                <button class="btn btn-primary" id="testOutputBtn" style="width: 100%;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+                    Test Output
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="content-header">
+                <h2 id="tabTitle">Logo Configuration</h2>
+                <div class="header-actions">
+                    <button class="btn btn-sm btn-secondary" id="resetBtn">Reset to Defaults</button>
+                </div>
+            </div>
+
+            <div class="content-body">
+                <div class="config-panel" id="configPanel">
+                    <!-- Logo Tab -->
+                    <div class="tab-content active" id="tab-logo">
+                        <div class="section">
+                            <h3 class="section-title">Logo Settings</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Logo Type</label>
+                                    <select id="logoType">
+                                        <option value="auto">Auto</option>
+                                        <option value="builtin">Builtin (ASCII)</option>
+                                        <option value="small">Small (ASCII)</option>
+                                        <option value="file">File</option>
+                                        <option value="file-raw">File Raw</option>
+                                        <option value="data">Data</option>
+                                        <option value="data-raw">Data Raw</option>
+                                        <option value="command-raw">Command Raw</option>
+                                        <option value="sixel">Sixel (Image)</option>
+                                        <option value="kitty">Kitty</option>
+                                        <option value="kitty-direct">Kitty Direct</option>
+                                        <option value="kitty-icat">Kitty ICat</option>
+                                        <option value="iterm">iTerm</option>
+                                        <option value="chafa">Chafa</option>
+                                        <option value="raw">Raw</option>
+                                        <option value="none">None (Disabled)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Logo Source</label>
+                                    <input type="text" id="logoSource" placeholder="e.g., arch, ubuntu, /path/to/logo.txt">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Width (characters)</label>
+                                    <input type="number" id="logoWidth" value="auto" placeholder="auto">
+                                </div>
+                                <div class="form-group">
+                                    <label>Height (characters)</label>
+                                    <input type="number" id="logoHeight" value="auto" placeholder="auto">
+                                </div>
+                            </div>
+                            <div class="nested-fields">
+                                <div class="nested-title">Padding</div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Top</label>
+                                        <input type="number" id="logoPaddingTop" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Left</label>
+                                        <input type="number" id="logoPaddingLeft" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Right</label>
+                                        <input type="number" id="logoPaddingRight" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="nested-fields">
+                                <div class="nested-title">Logo Colors (Overrides)</div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Color 1</label>
+                                        <select id="logoColor1" class="color-select">
+                                            <option value="">Default</option>
+                                            <option value="black">Black</option>
+                                            <option value="red">Red</option>
+                                            <option value="green">Green</option>
+                                            <option value="yellow">Yellow</option>
+                                            <option value="blue">Blue</option>
+                                            <option value="magenta">Magenta</option>
+                                            <option value="cyan">Cyan</option>
+                                            <option value="white">White</option>
+                                            <option value="default">Default</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Color 2</label>
+                                        <select id="logoColor2" class="color-select">
+                                            <option value="">Default</option>
+                                            <option value="black">Black</option>
+                                            <option value="red">Red</option>
+                                            <option value="green">Green</option>
+                                            <option value="yellow">Yellow</option>
+                                            <option value="blue">Blue</option>
+                                            <option value="magenta">Magenta</option>
+                                            <option value="cyan">Cyan</option>
+                                            <option value="white">White</option>
+                                            <option value="default">Default</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Color 3</label>
+                                        <select id="logoColor3" class="color-select">
+                                            <option value="">Default</option>
+                                            <option value="black">Black</option>
+                                            <option value="red">Red</option>
+                                            <option value="green">Green</option>
+                                            <option value="yellow">Yellow</option>
+                                            <option value="blue">Blue</option>
+                                            <option value="magenta">Magenta</option>
+                                            <option value="cyan">Cyan</option>
+                                            <option value="white">White</option>
+                                            <option value="default">Default</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Color 4</label>
+                                        <select id="logoColor4" class="color-select">
+                                            <option value="">Default</option>
+                                            <option value="black">Black</option>
+                                            <option value="red">Red</option>
+                                            <option value="green">Green</option>
+                                            <option value="yellow">Yellow</option>
+                                            <option value="blue">Blue</option>
+                                            <option value="magenta">Magenta</option>
+                                            <option value="cyan">Cyan</option>
+                                            <option value="white">White</option>
+                                            <option value="default">Default</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Color 5</label>
+                                        <select id="logoColor5" class="color-select">
+                                            <option value="">Default</option>
+                                            <option value="black">Black</option>
+                                            <option value="red">Red</option>
+                                            <option value="green">Green</option>
+                                            <option value="yellow">Yellow</option>
+                                            <option value="blue">Blue</option>
+                                            <option value="magenta">Magenta</option>
+                                            <option value="cyan">Cyan</option>
+                                            <option value="white">White</option>
+                                            <option value="default">Default</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row" style="margin-top: 15px;">
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="logoPreserveAspect">
+                                    <label for="logoPreserveAspect">Preserve Aspect Ratio</label>
+                                </div>
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="logoPrintRemaining">
+                                    <label for="logoPrintRemaining">Print Remaining Logo Lines</label>
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label>Logo Position</label>
+                                <select id="logoPosition">
+                                    <option value="auto">Auto</option>
+                                    <option value="left">Left</option>
+                                    <option value="right">Right</option>
+                                    <option value="top">Top</option>
+                                    <option value="center">Center</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Display Tab -->
+                    <div class="tab-content" id="tab-display">
+                        <div class="section">
+                            <h3 class="section-title">General Display</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Separator</label>
+                                    <input type="text" id="displaySeparator" value=": ">
+                                </div>
+                                <div class="form-group">
+                                    <label>Key Width</label>
+                                    <input type="number" id="keyWidth" value="auto" placeholder="auto">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Key Type</label>
+                                    <select id="keyType">
+                                        <option value="auto">Auto</option>
+                                        <option value="name">Name</option>
+                                        <option value="icon">Icon</option>
+                                        <option value="both">Both</option>
+                                        <option value="none">None</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Key Padding Left</label>
+                                    <input type="number" id="keyPaddingLeft" value="0">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="brightColor">
+                                    <label for="brightColor">Bright Color (Keys/Title/Logo)</label>
+                                </div>
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="disableLinewrap">
+                                    <label for="disableLinewrap">Disable Line Wrap</label>
+                                </div>
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="hideCursor">
+                                    <label for="hideCursor">Hide Cursor</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3 class="section-title">Percentage Bar</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Percent Type</label>
+                                    <select id="percentType">
+                                        <option value="0">Auto</option>
+                                        <option value="1">Number</option>
+                                        <option value="2">Bar</option>
+                                        <option value="3">Both</option>
+                                        <option value="6">Bar Only</option>
+                                        <option value="9">Colored Number</option>
+                                        <option value="10">Monochrome Bar</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Bar Width</label>
+                                    <input type="number" id="barWidth" value="10">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Bar Char Elapsed</label>
+                                    <input type="text" id="barCharElapsed" value="■">
+                                </div>
+                                <div class="form-group">
+                                    <label>Bar Char Total</label>
+                                    <input type="text" id="barCharTotal" value="-">
+                                </div>
+                            </div>
+                            <div class="nested-fields">
+                                <div class="nested-title">Percent Colors (Thresholds)</div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Green Threshold (%)</label>
+                                        <input type="number" id="percentGreen" value="30">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Yellow Threshold (%)</label>
+                                        <input type="number" id="percentYellow" value="70">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Green Color</label>
+                                        <select id="percentColorGreen">
+                                            <option value="green">Green</option>
+                                            <option value="light_green">Light Green</option>
+                                            <option value="cyan">Cyan</option>
+                                            <option value="blue">Blue</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Yellow Color</label>
+                                        <select id="percentColorYellow">
+                                            <option value="yellow">Yellow</option>
+                                            <option value="light_yellow">Light Yellow</option>
+                                            <option value="light_red">Light Red</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Red Color</label>
+                                        <select id="percentColorRed">
+                                            <option value="red">Red</option>
+                                            <option value="light_red">Light Red</option>
+                                            <option value="magenta">Magenta</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3 class="section-title">Temperature</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Unit</label>
+                                    <select id="tempUnit">
+                                        <option value="auto">Auto</option>
+                                        <option value="celsius">Celsius</option>
+                                        <option value="fahrenheit">Fahrenheit</option>
+                                        <option value="kelvin">Kelvin</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Decimal Places</label>
+                                    <input type="number" id="tempNdigits" value="1">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Green Threshold (°C)</label>
+                                    <input type="number" id="tempGreen" value="50">
+                                </div>
+                                <div class="form-group">
+                                    <label>Yellow Threshold (°C)</label>
+                                    <input type="number" id="tempYellow" value="80">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3 class="section-title">Number Formatting</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Size Decimal Places</label>
+                                    <input type="number" id="sizeNdigits" value="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Frequency Decimal Places</label>
+                                    <input type="number" id="freqNdigits" value="2">
+                                </div>
+                                <div class="form-group">
+                                    <label>Fraction Decimal Places</label>
+                                    <input type="number" id="fractionNdigits" value="2">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Binary Prefix</label>
+                                    <select id="sizeBinaryPrefix">
+                                        <option value="auto">Auto</option>
+                                        <option value="iec">IEC (KiB, MiB)</option>
+                                        <option value="si">SI (KB, MB)</option>
+                                        <option value="jedec">JEDEC (KB, MB)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Max Prefix</label>
+                                    <select id="sizeMaxPrefix">
+                                        <option value="auto">Auto</option>
+                                        <option value="kib">KiB</option>
+                                        <option value="mib">MiB</option>
+                                        <option value="gib">GiB</option>
+                                        <option value="tib">TiB</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modules Tab -->
+                    <div class="tab-content" id="tab-modules">
+                        <div class="file-drop" id="moduleDropZone">
+                            <p>Drag modules here to add them, or click to toggle</p>
+                        </div>
+                        <div class="search-box">
+                            <input type="text" id="moduleSearch" placeholder="Search modules...">
+                        </div>
+                        <div class="active-modules">
+                            <div class="active-modules-title">Active Modules (drag to reorder)</div>
+                            <div class="active-modules-list" id="activeModulesList"></div>
+                        </div>
+                        <div class="module-grid" id="moduleGrid"></div>
+                    </div>
+
+                    <!-- Colors Tab -->
+                    <div class="tab-content" id="tab-colors">
+                        <div class="section">
+                            <h3 class="section-title">Color Theme</h3>
+                            <div class="color-grid">
+                                <div class="form-group">
+                                    <label>Key Color</label>
+                                    <select id="colorKeys" class="color-select">
+                                        <option value="">Default</option>
+                                        <option value="black">Black</option>
+                                        <option value="red">Red</option>
+                                        <option value="green">Green</option>
+                                        <option value="yellow">Yellow</option>
+                                        <option value="blue">Blue</option>
+                                        <option value="magenta">Magenta</option>
+                                        <option value="cyan">Cyan</option>
+                                        <option value="white">White</option>
+                                        <option value="bright_black">Bright Black</option>
+                                        <option value="bright_red">Bright Red</option>
+                                        <option value="bright_green">Bright Green</option>
+                                        <option value="bright_yellow">Bright Yellow</option>
+                                        <option value="bright_blue">Bright Blue</option>
+                                        <option value="bright_magenta">Bright Magenta</option>
+                                        <option value="bright_cyan">Bright Cyan</option>
+                                        <option value="bright_white">Bright White</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Title Color</label>
+                                    <select id="colorTitle" class="color-select">
+                                        <option value="">Default</option>
+                                        <option value="black">Black</option>
+                                        <option value="red">Red</option>
+                                        <option value="green">Green</option>
+                                        <option value="yellow">Yellow</option>
+                                        <option value="blue">Blue</option>
+                                        <option value="magenta">Magenta</option>
+                                        <option value="cyan">Cyan</option>
+                                        <option value="white">White</option>
+                                        <option value="bright_black">Bright Black</option>
+                                        <option value="bright_red">Bright Red</option>
+                                        <option value="bright_green">Bright Green</option>
+                                        <option value="bright_yellow">Bright Yellow</option>
+                                        <option value="bright_blue">Bright Blue</option>
+                                        <option value="bright_magenta">Bright Magenta</option>
+                                        <option value="bright_cyan">Bright Cyan</option>
+                                        <option value="bright_white">Bright White</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Output Color</label>
+                                    <select id="colorOutput" class="color-select">
+                                        <option value="">Default</option>
+                                        <option value="black">Black</option>
+                                        <option value="red">Red</option>
+                                        <option value="green">Green</option>
+                                        <option value="yellow">Yellow</option>
+                                        <option value="blue">Blue</option>
+                                        <option value="magenta">Magenta</option>
+                                        <option value="cyan">Cyan</option>
+                                        <option value="white">White</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Separator Color</label>
+                                    <select id="colorSeparator" class="color-select">
+                                        <option value="">Default</option>
+                                        <option value="black">Black</option>
+                                        <option value="red">Red</option>
+                                        <option value="green">Green</option>
+                                        <option value="yellow">Yellow</option>
+                                        <option value="blue">Blue</option>
+                                        <option value="magenta">Magenta</option>
+                                        <option value="cyan">Cyan</option>
+                                        <option value="white">White</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="section">
+                            <h3 class="section-title">Presets</h3>
+                            <div class="form-row">
+                                <button class="btn btn-secondary" onclick="applyColorPreset('nord')">Nord</button>
+                                <button class="btn btn-secondary" onclick="applyColorPreset('dracula')">Dracula</button>
+                                <button class="btn btn-secondary" onclick="applyColorPreset('gruvbox')">Gruvbox</button>
+                                <button class="btn btn-secondary" onclick="applyColorPreset('solarized')">Solarized</button>
+                                <button class="btn btn-secondary" onclick="applyColorPreset('monokai')">Monokai</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- General Tab -->
+                    <div class="tab-content" id="tab-general">
+                        <div class="section">
+                            <h3 class="section-title">General Options</h3>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="threadOption" checked>
+                                <label for="threadOption">Use Separate Threads (HTTP Requests)</label>
+                            </div>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="detectVersion" checked>
+                                <label for="detectVersion">Detect Version (Terminal, Shell, Editor)</label>
+                            </div>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="showErrors">
+                                <label for="showErrors">Show Errors</label>
+                            </div>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="stat">
+                                <label for="stat">Show Timing Statistics</label>
+                            </div>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="pipe">
+                                <label for="pipe">Disable Colors (Pipe Mode)</label>
+                            </div>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="noBuffer">
+                                <label for="noBuffer">Disable Output Buffering</label>
+                            </div>
+                        </div>
+                        <div class="section">
+                            <h3 class="section-title">Timeouts</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>WMI Timeout (ms)</label>
+                                    <input type="number" id="wmiTimeout" value="3000">
+                                </div>
+                                <div class="form-group">
+                                    <label>Processing Timeout (ms)</label>
+                                    <input type="number" id="processingTimeout" value="5000">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="section">
+                            <h3 class="section-title">Dynamic Update</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Dynamic Interval (ms, 0 to disable)</label>
+                                    <input type="number" id="dynamicInterval" value="0" placeholder="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="section">
+                            <h3 class="section-title">Structure Override</h3>
+                            <div class="form-group">
+                                <label>Structure (comma-separated modules)</label>
+                                <textarea id="structureOverride" placeholder="e.g., Title,Separator,OS,Kernel,Uptime,Shell"></textarea>
+                            </div>
+                            <p style="color: var(--text-muted); font-size: 12px; margin-top: 5px;">
+                                Default: Title,Separator,OS,Host,Kernel,Uptime,Packages,Shell,Display,DE,WM,WMTheme,Theme,Icons,Font,Cursor,Terminal,TerminalFont,CPU,GPU,Memory,Swap,Disk,LocalIp,Battery,PowerAdapter,Locale
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-panel">
+                    <div class="preview-header">
+                        <h3>Generated Config</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-sm btn-secondary" id="copyBtn">Copy</button>
+                            <button class="btn btn-sm btn-secondary" id="downloadBtn">Download</button>
+                        </div>
+                    </div>
+                    <div class="preview-body">
+                        <pre id="jsonPreview">// Configuration will appear here</pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Terminal Modal -->
+    <div class="modal-overlay" id="terminalModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Test Output</h3>
+                <button class="btn btn-sm btn-secondary" id="closeTerminalModal">Close</button>
+            </div>
+            <div class="modal-body">
+                <div id="terminal"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm btn-secondary" id="rerunBtn">Re-run</button>
+                <button class="btn btn-sm btn-primary" id="openInTerminalBtn">Open in Terminal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="fileInput" accept=".json,.jsonc" style="display: none;">
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <script>
+        const MODULES = [
+            'Battery', 'BIOS', 'Bluetooth', 'BluetoothRadio', 'Board', 'Bootmgr', 'Break',
+            'Brightness', 'Btrfs', 'Camera', 'Chassis', 'Command', 'Colors', 'CPU', 'CPUCache',
+            'CPUUsage', 'Cursor', 'Custom', 'DateTime', 'DE', 'Display', 'Disk', 'DiskIO', 'DNS',
+            'Editor', 'Font', 'Gamepad', 'GPU', 'Host', 'Icons', 'InitSystem', 'Kernel',
+            'Keyboard', 'LM', 'Loadavg', 'Locale', 'LocalIp', 'Logo', 'Media', 'Memory',
+            'Monitor', 'Mouse', 'NetIO', 'OpenCL', 'OpenGL', 'OS', 'Packages', 'PhysicalDisk',
+            'PhysicalMemory', 'Player', 'PowerAdapter', 'Processes', 'PublicIp', 'Separator',
+            'Shell', 'Sound', 'Swap', 'Terminal', 'TerminalFont', 'TerminalSize', 'TerminalTheme',
+            'Title', 'Theme', 'TPM', 'Uptime', 'Users', 'Version', 'Vulkan', 'Wallpaper',
+            'Weather', 'WM', 'Wifi', 'WMTheme', 'Zpool'
+        ];
+
+        const DEFAULT_MODULES = [
+            'Title', 'Separator', 'OS', 'Host', 'Kernel', 'Uptime', 'Packages', 'Shell',
+            'Display', 'DE', 'WM', 'WMTheme', 'Theme', 'Icons', 'Font', 'Cursor', 'Terminal',
+            'TerminalFont', 'CPU', 'GPU', 'Memory', 'Swap', 'Disk', 'LocalIp', 'Battery',
+            'PowerAdapter', 'Locale'
+        ];
+
+        let config = {
+            logo: {},
+            display: {},
+            modules: [...DEFAULT_MODULES]
+        };
+
+        let activeModules = [...DEFAULT_MODULES];
+        let term = null;
+        let fitAddon = null;
+
+        function init() {
+            setupNavigation();
+            setupModuleGrid();
+            setupEventListeners();
+            updatePreview();
+        }
+
+        function setupNavigation() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const tab = item.dataset.tab;
+                    
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    document.getElementById(`tab-${tab}`).classList.add('active');
+                    
+                    const titles = {
+                        logo: 'Logo Configuration',
+                        display: 'Display Settings',
+                        modules: 'Module Configuration',
+                        colors: 'Color Settings',
+                        general: 'General Options'
+                    };
+                    document.getElementById('tabTitle').textContent = titles[tab];
+                });
+            });
+        }
+
+        function setupModuleGrid() {
+            const grid = document.getElementById('moduleGrid');
+            const searchInput = document.getElementById('moduleSearch');
+            
+            function renderModules(filter = '') {
+                grid.innerHTML = '';
+                MODULES.filter(m => m.toLowerCase().includes(filter.toLowerCase())).forEach(module => {
+                    const item = document.createElement('div');
+                    item.className = 'module-item' + (activeModules.includes(module) ? ' selected' : '');
+                    item.innerHTML = `
+                        <input type="checkbox" ${activeModules.includes(module) ? 'checked' : ''}>
+                        <span>${module}</span>
+                    `;
+                    item.addEventListener('click', (e) => {
+                        if (e.target.type === 'checkbox') return;
+                        toggleModule(module);
+                    });
+                    item.querySelector('input').addEventListener('change', () => toggleModule(module));
+                    grid.appendChild(item);
+                });
+            }
+            
+            renderModules();
+            updateActiveModulesList();
+            
+            searchInput.addEventListener('input', (e) => renderModules(e.target.value));
+        }
+
+        function toggleModule(module) {
+            const idx = activeModules.indexOf(module);
+            if (idx === -1) {
+                activeModules.push(module);
+            } else {
+                activeModules.splice(idx, 1);
+            }
+            setupModuleGrid();
+        }
+
+        function updateActiveModulesList() {
+            const list = document.getElementById('activeModulesList');
+            list.innerHTML = activeModules.map(m => `
+                <div class="module-tag" draggable="true" data-module="${m}">
+                    <span>${m}</span>
+                    <span class="remove" onclick="removeModule('${m}')">×</span>
+                </div>
+            `).join('');
+            
+            setupDragAndDrop();
+        }
+
+        function removeModule(module) {
+            toggleModule(module);
+        }
+
+        function setupDragAndDrop() {
+            const tags = document.querySelectorAll('.module-tag');
+            const list = document.getElementById('activeModulesList');
+            
+            tags.forEach(tag => {
+                tag.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', tag.dataset.module);
+                    tag.style.opacity = '0.5';
+                });
+                tag.addEventListener('dragend', () => {
+                    tag.style.opacity = '1';
+                });
+            });
+            
+            list.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+            
+            list.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const draggedModule = e.dataTransfer.getData('text/plain');
+                const target = e.target.closest('.module-tag');
+                
+                if (target) {
+                    const draggedIdx = activeModules.indexOf(draggedModule);
+                    const targetIdx = activeModules.indexOf(target.dataset.module);
+                    
+                    activeModules.splice(draggedIdx, 1);
+                    activeModules.splice(targetIdx, 0, draggedModule);
+                    
+                    updateActiveModulesList();
+                    updatePreview();
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('testOutputBtn').addEventListener('click', openTerminalModal);
+            document.getElementById('closeTerminalModal').addEventListener('click', closeTerminalModal);
+            document.getElementById('rerunBtn').addEventListener('click', runFastfetch);
+            document.getElementById('openInTerminalBtn').addEventListener('click', runInExternalTerminal);
+            document.getElementById('resetBtn').addEventListener('click', resetConfig);
+            document.getElementById('importBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+            document.getElementById('fileInput').addEventListener('change', handleFileImport);
+            document.getElementById('exportBtn').addEventListener('click', exportConfig);
+            document.getElementById('copyBtn').addEventListener('click', copyConfig);
+            document.getElementById('downloadBtn').addEventListener('click', downloadConfig);
+            
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                el.addEventListener('change', updatePreview);
+                el.addEventListener('input', debounce(updatePreview, 300));
+            });
+            
+            document.getElementById('terminalModal').addEventListener('click', (e) => {
+                if (e.target.id === 'terminalModal') closeTerminalModal();
+            });
+        }
+
+        function updatePreview() {
+            config = buildConfig();
+            const json = JSON.stringify(config, null, 2);
+            document.getElementById('jsonPreview').textContent = json;
+        }
+
+        function buildConfig() {
+            const cfg = {
+                "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json"
+            };
+            
+            // Logo
+            const logo = {};
+            const logoType = document.getElementById('logoType').value;
+            if (logoType !== 'auto') logo.type = logoType;
+            
+            const logoSource = document.getElementById('logoSource').value.trim();
+            if (logoSource) logo.source = logoSource;
+            
+            const logoWidth = document.getElementById('logoWidth').value;
+            if (logoWidth && logoWidth !== 'auto') logo.width = parseInt(logoWidth);
+            
+            const logoHeight = document.getElementById('logoHeight').value;
+            if (logoHeight && logoHeight !== 'auto') logo.height = parseInt(logoHeight);
+            
+            const paddingTop = parseInt(document.getElementById('logoPaddingTop').value);
+            const paddingLeft = parseInt(document.getElementById('logoPaddingLeft').value);
+            const paddingRight = parseInt(document.getElementById('logoPaddingRight').value);
+            if (paddingTop !== 0 || paddingLeft !== 0 || paddingRight !== 0) {
+                logo.padding = {};
+                if (paddingTop !== 0) logo.padding.top = paddingTop;
+                if (paddingLeft !== 0) logo.padding.left = paddingLeft;
+                if (paddingRight !== 0) logo.padding.right = paddingRight;
+            }
+            
+            const logoColors = {};
+            for (let i = 1; i <= 5; i++) {
+                const color = document.getElementById(`logoColor${i}`).value;
+                if (color) logoColors[i] = color;
+            }
+            if (Object.keys(logoColors).length > 0) {
+                logo.color = logoColors;
+            }
+            
+            if (document.getElementById('logoPreserveAspect').checked) {
+                logo.preserveAspectRatio = true;
+            }
+            if (document.getElementById('logoPrintRemaining').checked) {
+                logo.printRemaining = true;
+            }
+            
+            const logoPosition = document.getElementById('logoPosition').value;
+            if (logoPosition !== 'auto') logo.position = logoPosition;
+            
+            if (Object.keys(logo).length > 0) cfg.logo = logo;
+            
+            // Display
+            const display = {};
+            
+            const separator = document.getElementById('displaySeparator').value;
+            if (separator !== ': ') display.separator = separator;
+            
+            const keyWidth = document.getElementById('keyWidth').value;
+            if (keyWidth && keyWidth !== 'auto') display.keyWidth = parseInt(keyWidth);
+            
+            const keyType = document.getElementById('keyType').value;
+            if (keyType !== 'auto') display.key = { type: keyType };
+            
+            const keyPaddingLeft = parseInt(document.getElementById('keyPaddingLeft').value);
+            if (keyPaddingLeft !== 0) {
+                if (!display.key) display.key = {};
+                display.key.paddingLeft = keyPaddingLeft;
+            }
+            
+            if (document.getElementById('brightColor').checked) display.brightColor = true;
+            if (document.getElementById('disableLinewrap').checked) display.disableLineWrap = true;
+            if (document.getElementById('hideCursor').checked) display.hideCursor = true;
+            
+            // Bar settings
+            const barWidth = parseInt(document.getElementById('barWidth').value);
+            const barCharElapsed = document.getElementById('barCharElapsed').value;
+            const barCharTotal = document.getElementById('barCharTotal').value;
+            
+            if (barWidth !== 10 || barCharElapsed !== '■' || barCharTotal !== '-') {
+                display.bar = {};
+                if (barWidth !== 10) display.bar.width = barWidth;
+                if (barCharElapsed !== '■' || barCharTotal !== '-') {
+                    display.bar.char = {};
+                    if (barCharElapsed !== '■') display.bar.char.elapsed = barCharElapsed;
+                    if (barCharTotal !== '-') display.bar.char.total = barCharTotal;
+                }
+            }
+            
+            // Percent settings
+            const percentType = parseInt(document.getElementById('percentType').value);
+            const percentGreen = parseInt(document.getElementById('percentGreen').value);
+            const percentYellow = parseInt(document.getElementById('percentYellow').value);
+            
+            if (percentType !== 0 || percentGreen !== 30 || percentYellow !== 70) {
+                display.percent = {};
+                if (percentType !== 0) display.percent.type = percentType;
+                if (percentGreen !== 30 || percentYellow !== 70) {
+                    display.percent.green = percentGreen;
+                    display.percent.yellow = percentYellow;
+                }
+            }
+            
+            const percentColorGreen = document.getElementById('percentColorGreen').value;
+            const percentColorYellow = document.getElementById('percentColorYellow').value;
+            const percentColorRed = document.getElementById('percentColorRed').value;
+            
+            if (percentColorGreen !== 'green' || percentColorYellow !== 'yellow' || percentColorRed !== 'red') {
+                if (!display.percent) display.percent = {};
+                display.percent.color = {};
+                if (percentColorGreen !== 'green') display.percent.color.green = percentColorGreen;
+                if (percentColorYellow !== 'yellow') display.percent.color.yellow = percentColorYellow;
+                if (percentColorRed !== 'red') display.percent.color.red = percentColorRed;
+            }
+            
+            // Temperature
+            const tempUnit = document.getElementById('tempUnit').value;
+            const tempNdigits = parseInt(document.getElementById('tempNdigits').value);
+            const tempGreen = parseInt(document.getElementById('tempGreen').value);
+            const tempYellow = parseInt(document.getElementById('tempYellow').value);
+            
+            if (tempUnit !== 'auto' || tempNdigits !== 1 || tempGreen !== 50 || tempYellow !== 80) {
+                display.temperature = {};
+                if (tempUnit !== 'auto') display.temperature.unit = tempUnit;
+                if (tempNdigits !== 1) display.temperature.ndigits = tempNdigits;
+                if (tempGreen !== 50 || tempYellow !== 80) {
+                    display.temperature.green = tempGreen;
+                    display.temperature.yellow = tempYellow;
+                }
+            }
+            
+            // Number formatting
+            const sizeNdigits = parseInt(document.getElementById('sizeNdigits').value);
+            const freqNdigits = parseInt(document.getElementById('freqNdigits').value);
+            const fractionNdigits = parseInt(document.getElementById('fractionNdigits').value);
+            const sizeBinaryPrefix = document.getElementById('sizeBinaryPrefix').value;
+            const sizeMaxPrefix = document.getElementById('sizeMaxPrefix').value;
+            
+            if (sizeNdigits !== 1 || freqNdigits !== 2 || fractionNdigits !== 2) {
+                display.size = { ndigits: sizeNdigits };
+                display.freq = { ndigits: freqNdigits };
+                display.fraction = { ndigits: fractionNdigits };
+            }
+            
+            if (sizeBinaryPrefix !== 'auto') {
+                if (!display.size) display.size = {};
+                display.size.binaryPrefix = sizeBinaryPrefix;
+            }
+            if (sizeMaxPrefix !== 'auto') {
+                if (!display.size) display.size = {};
+                display.size.maxPrefix = sizeMaxPrefix;
+            }
+            
+            if (Object.keys(display).length > 0) cfg.display = display;
+            
+            // Colors
+            const colorKeys = document.getElementById('colorKeys').value;
+            const colorTitle = document.getElementById('colorTitle').value;
+            const colorOutput = document.getElementById('colorOutput').value;
+            const colorSeparator = document.getElementById('colorSeparator').value;
+            
+            if (colorKeys || colorTitle || colorOutput || colorSeparator) {
+                cfg.color = {};
+                if (colorKeys) cfg.color.keys = colorKeys;
+                if (colorTitle) cfg.color.title = colorTitle;
+                if (colorOutput) cfg.color.output = colorOutput;
+                if (colorSeparator) cfg.color.separator = colorSeparator;
+            }
+            
+            // General options
+            if (!document.getElementById('threadOption').checked) {
+                cfg.thread = false;
+            }
+            if (!document.getElementById('detectVersion').checked) {
+                cfg.detectVersion = false;
+            }
+            if (document.getElementById('showErrors').checked) {
+                cfg.showErrors = true;
+            }
+            if (document.getElementById('stat').checked) {
+                cfg.stat = true;
+            }
+            if (document.getElementById('pipe').checked) {
+                cfg.pipe = true;
+            }
+            if (document.getElementById('noBuffer').checked) {
+                cfg.noBuffer = true;
+            }
+            
+            const wmiTimeout = parseInt(document.getElementById('wmiTimeout').value);
+            if (wmiTimeout !== 3000) cfg.wmiTimeout = wmiTimeout;
+            
+            const processingTimeout = parseInt(document.getElementById('processingTimeout').value);
+            if (processingTimeout !== 5000) cfg.processingTimeout = processingTimeout;
+            
+            const dynamicInterval = parseInt(document.getElementById('dynamicInterval').value);
+            if (dynamicInterval !== 0) cfg["dynamic-interval"] = dynamicInterval;
+            
+            const structureOverride = document.getElementById('structureOverride').value.trim();
+            if (structureOverride) {
+                cfg.structure = structureOverride.split(',').map(s => s.trim()).filter(s => s);
+            }
+            
+            // Modules
+            cfg.modules = activeModules;
+            
+            return cfg;
+        }
+
+        function openTerminalModal() {
+            const modal = document.getElementById('terminalModal');
+            modal.classList.add('active');
+            
+            setTimeout(() => {
+                if (!term) {
+                    term = new Terminal({
+                        cursorBlink: true,
+                        fontSize: 13,
+                        fontFamily: 'JetBrains Mono, Fira Code, Consolas, monospace',
+                        theme: {
+                            background: '#000000',
+                            foreground: '#ffffff'
+                        },
+                        scrollback: 1000
+                    });
+                    
+                    fitAddon = new FitAddon.FitAddon();
+                    term.loadAddon(fitAddon);
+                    term.open(document.getElementById('terminal'));
+                }
+                
+                fitAddon.fit();
+                runFastfetch();
+            }, 100);
+        }
+
+        function closeTerminalModal() {
+            document.getElementById('terminalModal').classList.remove('active');
+        }
+
+        async function runFastfetch() {
+            if (!term) return;
+            
+            term.clear();
+            term.writeln('\x1b[1;34m[Fastfetch Config Maker]\x1b[0m Running test...\r\n');
+            
+            try {
+                const configJson = JSON.stringify(buildConfig(), null, 2);
+                
+                const response = await fetch('/api/fastfetch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ config: configJson })
+                });
+                
+                if (response.ok) {
+                    const result = await response.text();
+                    term.write(result);
+                } else {
+                    throw new Error(response.statusText);
+                }
+            } catch (e) {
+                term.writeln(`\x1b[31m[Server not available]\x1b[0m`);
+                term.writeln('\r\n\x1b[33mThe embedded terminal requires the server.\x1b[0m');
+                term.writeln('');
+                term.writeln('Use the \x1b[36m"Open in Terminal"\x1b[0m button to test in your terminal.');
+                term.writeln('');
+                term.writeln('\x1b[2mOr run: node server.js\x1b[0m');
+            }
+            
+            term.writeln('');
+            term.writeln('\x1b[2m[Press "Re-run" to test again | Close modal to exit]\x1b[0m');
+        }
+        
+        function runInExternalTerminal() {
+            const config = JSON.stringify(buildConfig(), null, 2);
+            const blob = new Blob([config], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'fastfetch-test-config.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('Config downloaded!\n\nRun this command in your terminal:\n\nfastfetch --config fastfetch-test-config.json');
+        }
+
+        function resetConfig() {
+            if (!confirm('Reset all settings to defaults?')) return;
+            
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.type === 'checkbox') {
+                    el.checked = el.defaultChecked;
+                } else if (el.tagName === 'SELECT') {
+                    el.selectedIndex = 0;
+                } else {
+                    el.value = el.defaultValue;
+                }
+            });
+            
+            document.getElementById('logoType').value = 'auto';
+            document.getElementById('logoPaddingTop').value = '0';
+            document.getElementById('logoPaddingLeft').value = '0';
+            document.getElementById('logoPaddingRight').value = '0';
+            document.getElementById('logoWidth').value = 'auto';
+            document.getElementById('logoHeight').value = 'auto';
+            document.getElementById('logoPosition').value = 'auto';
+            document.getElementById('displaySeparator').value = ': ';
+            document.getElementById('keyWidth').value = 'auto';
+            document.getElementById('keyType').value = 'auto';
+            document.getElementById('keyPaddingLeft').value = '0';
+            document.getElementById('percentType').value = '0';
+            document.getElementById('percentGreen').value = '30';
+            document.getElementById('percentYellow').value = '70';
+            document.getElementById('percentColorGreen').value = 'green';
+            document.getElementById('percentColorYellow').value = 'yellow';
+            document.getElementById('percentColorRed').value = 'red';
+            document.getElementById('barWidth').value = '10';
+            document.getElementById('barCharElapsed').value = '■';
+            document.getElementById('barCharTotal').value = '-';
+            document.getElementById('tempUnit').value = 'auto';
+            document.getElementById('tempNdigits').value = '1';
+            document.getElementById('tempGreen').value = '50';
+            document.getElementById('tempYellow').value = '80';
+            document.getElementById('sizeNdigits').value = '1';
+            document.getElementById('freqNdigits').value = '2';
+            document.getElementById('fractionNdigits').value = '2';
+            document.getElementById('wmiTimeout').value = '3000';
+            document.getElementById('processingTimeout').value = '5000';
+            document.getElementById('dynamicInterval').value = '0';
+            document.getElementById('threadOption').checked = true;
+            document.getElementById('detectVersion').checked = true;
+            document.getElementById('showErrors').checked = false;
+            document.getElementById('stat').checked = false;
+            document.getElementById('pipe').checked = false;
+            document.getElementById('noBuffer').checked = false;
+            document.getElementById('brightColor').checked = false;
+            document.getElementById('disableLinewrap').checked = false;
+            document.getElementById('hideCursor').checked = false;
+            document.getElementById('logoPreserveAspect').checked = false;
+            document.getElementById('logoPrintRemaining').checked = false;
+            
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`logoColor${i}`).value = '';
+            }
+            
+            document.getElementById('colorKeys').value = '';
+            document.getElementById('colorTitle').value = '';
+            document.getElementById('colorOutput').value = '';
+            document.getElementById('colorSeparator').value = '';
+            
+            document.getElementById('structureOverride').value = '';
+            
+            activeModules = [...DEFAULT_MODULES];
+            setupModuleGrid();
+            updatePreview();
+        }
+
+        function handleFileImport(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    applyConfig(imported);
+                    alert('Configuration imported successfully!');
+                } catch (err) {
+                    alert('Error parsing config file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+
+        function applyConfig(cfg) {
+            if (cfg.logo) {
+                if (cfg.logo.type) document.getElementById('logoType').value = cfg.logo.type;
+                if (cfg.logo.source) document.getElementById('logoSource').value = cfg.logo.source;
+                if (cfg.logo.width) document.getElementById('logoWidth').value = cfg.logo.width;
+                if (cfg.logo.height) document.getElementById('logoHeight').value = cfg.logo.height;
+                if (cfg.logo.padding) {
+                    if (cfg.logo.padding.top !== undefined) document.getElementById('logoPaddingTop').value = cfg.logo.padding.top;
+                    if (cfg.logo.padding.left !== undefined) document.getElementById('logoPaddingLeft').value = cfg.logo.padding.left;
+                    if (cfg.logo.padding.right !== undefined) document.getElementById('logoPaddingRight').value = cfg.logo.padding.right;
+                }
+                if (cfg.logo.color) {
+                    for (let i = 1; i <= 5; i++) {
+                        if (cfg.logo.color[i]) document.getElementById(`logoColor${i}`).value = cfg.logo.color[i];
+                    }
+                }
+                if (cfg.logo.preserveAspectRatio) document.getElementById('logoPreserveAspect').checked = true;
+                if (cfg.logo.printRemaining) document.getElementById('logoPrintRemaining').checked = true;
+                if (cfg.logo.position) document.getElementById('logoPosition').value = cfg.logo.position;
+            }
+            
+            if (cfg.display) {
+                if (cfg.display.separator) document.getElementById('displaySeparator').value = cfg.display.separator;
+                if (cfg.display.keyWidth) document.getElementById('keyWidth').value = cfg.display.keyWidth;
+                if (cfg.display.key && cfg.display.key.type) document.getElementById('keyType').value = cfg.display.key.type;
+                if (cfg.display.key && cfg.display.key.paddingLeft) document.getElementById('keyPaddingLeft').value = cfg.display.key.paddingLeft;
+                if (cfg.display.brightColor) document.getElementById('brightColor').checked = true;
+                if (cfg.display.disableLineWrap) document.getElementById('disableLinewrap').checked = true;
+                if (cfg.display.hideCursor) document.getElementById('hideCursor').checked = true;
+                if (cfg.display.bar) {
+                    if (cfg.display.bar.width) document.getElementById('barWidth').value = cfg.display.bar.width;
+                    if (cfg.display.bar.char) {
+                        if (cfg.display.bar.char.elapsed) document.getElementById('barCharElapsed').value = cfg.display.bar.char.elapsed;
+                        if (cfg.display.bar.char.total) document.getElementById('barCharTotal').value = cfg.display.bar.char.total;
+                    }
+                }
+                if (cfg.display.percent) {
+                    if (cfg.display.percent.type) document.getElementById('percentType').value = cfg.display.percent.type;
+                    if (cfg.display.percent.green) document.getElementById('percentGreen').value = cfg.display.percent.green;
+                    if (cfg.display.percent.yellow) document.getElementById('percentYellow').value = cfg.display.percent.yellow;
+                    if (cfg.display.percent.color) {
+                        if (cfg.display.percent.color.green) document.getElementById('percentColorGreen').value = cfg.display.percent.color.green;
+                        if (cfg.display.percent.color.yellow) document.getElementById('percentColorYellow').value = cfg.display.percent.color.yellow;
+                        if (cfg.display.percent.color.red) document.getElementById('percentColorRed').value = cfg.display.percent.color.red;
+                    }
+                }
+                if (cfg.display.temperature) {
+                    if (cfg.display.temperature.unit) document.getElementById('tempUnit').value = cfg.display.temperature.unit;
+                    if (cfg.display.temperature.ndigits) document.getElementById('tempNdigits').value = cfg.display.temperature.ndigits;
+                    if (cfg.display.temperature.green) document.getElementById('tempGreen').value = cfg.display.temperature.green;
+                    if (cfg.display.temperature.yellow) document.getElementById('tempYellow').value = cfg.display.temperature.yellow;
+                }
+            }
+            
+            if (cfg.color) {
+                if (cfg.color.keys) document.getElementById('colorKeys').value = cfg.color.keys;
+                if (cfg.color.title) document.getElementById('colorTitle').value = cfg.color.title;
+                if (cfg.color.output) document.getElementById('colorOutput').value = cfg.color.output;
+                if (cfg.color.separator) document.getElementById('colorSeparator').value = cfg.color.separator;
+            }
+            
+            if (cfg.thread === false) document.getElementById('threadOption').checked = false;
+            if (cfg.detectVersion === false) document.getElementById('detectVersion').checked = false;
+            if (cfg.showErrors) document.getElementById('showErrors').checked = true;
+            if (cfg.stat) document.getElementById('stat').checked = true;
+            if (cfg.pipe) document.getElementById('pipe').checked = true;
+            if (cfg.noBuffer) document.getElementById('noBuffer').checked = true;
+            if (cfg.wmiTimeout) document.getElementById('wmiTimeout').value = cfg.wmiTimeout;
+            if (cfg.processingTimeout) document.getElementById('processingTimeout').value = cfg.processingTimeout;
+            if (cfg["dynamic-interval"]) document.getElementById('dynamicInterval').value = cfg["dynamic-interval"];
+            if (cfg.structure) document.getElementById('structureOverride').value = cfg.structure.join(',');
+            
+            if (cfg.modules && Array.isArray(cfg.modules)) {
+                activeModules = cfg.modules;
+                setupModuleGrid();
+            }
+            
+            updatePreview();
+        }
+
+        function exportConfig() {
+            const json = JSON.stringify(buildConfig(), null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'config.jsonc';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function copyConfig() {
+            const json = JSON.stringify(buildConfig(), null, 2);
+            navigator.clipboard.writeText(json).then(() => {
+                const btn = document.getElementById('copyBtn');
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = original, 1500);
+            });
+        }
+
+        function downloadConfig() {
+            exportConfig();
+        }
+
+        function applyColorPreset(preset) {
+            const presets = {
+                nord: { keys: 'cyan', title: 'white', output: '', separator: '' },
+                dracula: { keys: 'magenta', title: 'white', output: '', separator: '' },
+                gruvbox: { keys: 'yellow', title: 'red', output: '', separator: '' },
+                solarized: { keys: 'cyan', title: 'yellow', output: '', separator: '' },
+                monokai: { keys: 'magenta', title: 'white', output: '', separator: '' }
+            };
+            
+            const p = presets[preset];
+            if (p.keys) document.getElementById('colorKeys').value = p.keys;
+            if (p.title) document.getElementById('colorTitle').value = p.title;
+            updatePreview();
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+        
+        window.addEventListener('resize', () => {
+            if (term && fitAddon) {
+                fitAddon.fit();
+            }
+        });
+    </script>
+</body>
+</html>
